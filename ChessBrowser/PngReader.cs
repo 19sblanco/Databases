@@ -118,7 +118,7 @@ namespace ChessBrowser
                         eventDate = eventDate.Replace(".", "-");
                         if (eventDate.Contains("?"))
                         {
-                            eventDate = "0000-00-00";
+                            eventDate = "'0000-00-00'";
                             Console.WriteLine(eventDate);
                         }
                         //Console.WriteLine("eventDate" + eventDate);

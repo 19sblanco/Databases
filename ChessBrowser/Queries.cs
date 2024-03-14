@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using Windows.Storage.Search;
+using System.Diagnostics;
 
 /*
   Author: Daniel Kopta and ...
@@ -155,6 +157,9 @@ namespace ChessBrowser
             // assuimg you've typed a user and password in the GUI
             string connection = mainPage.GetConnectionString();
 
+            //Added this
+            //connection += "ConvertZeroDateTime=True;";
+
             // Build up this string containing the results from your query
             string parsedResult = "";
 
@@ -173,10 +178,116 @@ namespace ChessBrowser
                     //       Generate and execute an SQL command,
                     //       then parse the results into an appropriate string and return it.
 
-                    // select Events.Name, Events.Site, Events.Date, ...
+                    MySqlCommand querey = conn.CreateCommand();
 
-                    // Search for white player
-                    // 
+                    //SQL command 
+                    //select Events.Name, Site, Events.Date, whiteName, whiteElo, blackName, blackElo, Result
+                    //from Games join(select white.Name as whiteName, white.Elo as whiteElo, white.pID as whiteID, black.Name as blackName,
+                    //black.Elo as blackElo, black.pID as blackID from Players as white join Players as black where white.pid != black.pid)as pairs
+                    //natural join Events where whiteID = Games.WhitePlayer and blackID = Games.BlackPlayer;
+
+                    querey.CommandText = "select Events.Name, Site, Events.Date, whiteName, whiteElo, blackName, blackElo, Result";
+
+                    //Build querey based on what is wanted
+                    //Check for Moves
+                    if(showMoves == true)
+                    {
+                        querey.CommandText += ", Moves";
+                    }
+
+                    // Build rows of data from tables
+                    querey.CommandText += " from Games join(select white.Name as whiteName, white.Elo as whiteElo, white.pID as whiteID, "
+                                            + "black.Name as blackName, black.Elo as blackElo, black.pID as blackID from Players as white "
+                                            + "join Players as black where white.pid != black.pid)as pairs natural join Events where whiteID = "
+                                            + "Games.WhitePlayer and blackID = Games.BlackPlayer";
+
+                    // Add in User specifications
+                    if(white != null) //if user specifies white player
+                    {
+                        querey.CommandText += " and whiteName = @val1";
+                        querey.Parameters.AddWithValue("@val1", "");
+                    }
+                    if(black != null)
+                    {
+                        querey.CommandText += " and blackName = @val2";
+                        querey.Parameters.AddWithValue("@val2", "");
+                    }
+                    if (opening != null)
+                    {
+                        querey.CommandText += " and Moves like @val3";
+                        querey.Parameters.AddWithValue("@val3", "");
+                    }
+                    if(winner != null)
+                    {
+                        querey.CommandText += " and Result = @val4";
+                        querey.Parameters.AddWithValue("@val4", "");
+                    }
+                    if(useDate == true)
+                    {
+                        querey.CommandText += " and Date between @val5 and @val6";
+                        querey.Parameters.AddWithValue("@val5", "");
+                        querey.Parameters.AddWithValue("@val6", "");
+                    }
+
+                    //jclose out the querey
+                    querey.CommandText += ";";
+
+                    // Fill in User querey
+                    if(white != null)
+                    {
+                        querey.Parameters["@val1"].Value = white;
+                    }
+                    if(black != null)
+                    {
+                        querey.Parameters["@val2"].Value = black;
+                    }
+                    if(opening != null)
+                    {
+                        querey.Parameters["@val3"].Value = opening + "%";
+                    }
+                    if(winner != null)
+                    {
+                        querey.Parameters["@val4"].Value = winner;
+                    }
+                    if(useDate == true)
+                    {
+                        querey.Parameters["@val5"].Value = start;
+                        querey.Parameters["@val6"].Value = end;
+                    }
+
+                    Debug.WriteLine(querey.CommandText);
+
+                    //Execute user querey
+                    using(MySqlDataReader reader = querey.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            //Format output
+                            parsedResult += "Events: " + reader["Name"] + "\n";
+                            parsedResult += "Site: " + reader["Site"] + "\n";
+                            try {
+                                parsedResult += "Date: " + reader["Date"] + "\n";
+                            }
+                            catch(Exception e)
+                            {
+                                parsedResult += "Date: " + "00/00/0000 12:00:00 AM" + "\n";
+                            }
+                            
+                            parsedResult += "White: " + reader["whiteName"] + " (" + reader["whiteElo"] + ")\n";
+                            parsedResult += "Black: " + reader["blackName"] + " (" + reader["blackElo"] + ")\n";
+                            parsedResult += "Result: " + reader["Result"] + "\n";
+                            parsedResult += "\n";
+
+                            //If moves are requested
+                            if(showMoves == true)
+                            {
+                                parsedResult += reader["Moves"] + "\n\n";
+                            }
+
+                            numRows++;
+                            
+                        }
+                    }
                 }
                 catch (Exception e)
                 {
@@ -184,7 +295,7 @@ namespace ChessBrowser
                 }
             }
 
-            return numRows + " results\n" + parsedResult;
+            return numRows + " results\n\n" + parsedResult;
         }
 
     }
