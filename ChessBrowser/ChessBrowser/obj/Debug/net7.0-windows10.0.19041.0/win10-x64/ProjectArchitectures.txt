@@ -1,0 +1,1 @@
+C:\Users\sblan\uofu\databases\ChessBrowser\ChessBrowser\ChessBrowser.csproj;x64
