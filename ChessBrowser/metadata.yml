@@ -1,0 +1,14 @@
+---
+:id: 238875756
+:submitters:
+- :name: MISAEL NAVA
+  :email: u1117496@utah.edu
+- :name: STEVEN BLANCO
+  :email: u1375369@utah.edu
+:created_at: !ruby/object:ActiveSupport::TimeWithZone
+  utc: 2024-03-14 01:52:36.135455000 Z
+  zone: !ruby/object:ActiveSupport::TimeZone
+    name: America/Los_Angeles
+  time: 2024-03-13 18:52:36.135455000 Z
+:status: processed
+:score: 100.0
