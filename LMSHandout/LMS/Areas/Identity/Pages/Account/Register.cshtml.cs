@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
@@ -237,11 +238,25 @@ namespace LMS.Areas.Identity.Pages.Account
             }
             else if(role == "Professor")
             {
+                Professor prof = new Professor();
+                prof.UId = newUid;
+                prof.FName = firstName;
+                prof.LName = lastName;
+                prof.Dob = DateOnly.FromDateTime(DOB);
+                prof.WorksIn = departmentAbbrev;
 
+                db.Professors.Add(prof);
             }
             else if(role == "Student")
             {
+                Student stud = new Student();
+                stud.UId = newUid;
+                stud.FName = firstName;
+                stud.LName = lastName;
+                stud.Dob = DateOnly.FromDateTime(DOB);
+                stud.Major = departmentAbbrev;
 
+                db.Students.Add(stud);
             }
 
             try
