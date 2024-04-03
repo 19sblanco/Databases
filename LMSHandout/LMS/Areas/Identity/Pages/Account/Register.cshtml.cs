@@ -22,6 +22,7 @@ using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Logging;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace LMS.Areas.Identity.Pages.Account
 {
@@ -194,7 +195,66 @@ namespace LMS.Areas.Identity.Pages.Account
         /// <returns>The uID of the new user</returns>
         string CreateNewUser( string firstName, string lastName, DateTime DOB, string departmentAbbrev, string role )
         {
-            return "unknown";
+            // Step 1 find a avaiable uid
+            var findStudentUid = from s in db.Students
+                          select s.UId;
+            var findProfessorUid = from p in db.Professors
+                                   select p.UId;
+            var findAdministratorUid = from a in db.Administrators
+                                       select a.UId;
+
+            var CombinedResult = findStudentUid.Concat(findProfessorUid).Concat(findAdministratorUid);
+
+            // Look through result to find a new uID
+            int maxVal = 0;
+            foreach(var x in CombinedResult)
+            {
+                int temp = int.Parse(x.Substring(1));
+                if(temp > maxVal)
+                {
+                    maxVal = temp;
+                }
+            }
+            maxVal++;
+
+            // Add Padding
+            string ID = maxVal.ToString();
+            ID = ID.PadLeft(7, '0');
+
+            // New uID
+            string newUid = "u" + ID;
+
+            // Step 2 add user to LMS
+            if(role == "Administrator")
+            {
+                Administrator admin = new Administrator();
+                admin.UId = newUid;
+                admin.FName = firstName;
+                admin.LName = lastName;
+                admin.Dob = DateOnly.FromDateTime(DOB); //DateOnly.FromDateTime(DateTime.Now)
+
+                db.Administrators.Add(admin);
+            }
+            else if(role == "Professor")
+            {
+
+            }
+            else if(role == "Student")
+            {
+
+            }
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch(Exception e)
+            {
+
+            }
+
+            // return new user uid
+            return newUid;
         }
 
         /*******End code to modify********/
