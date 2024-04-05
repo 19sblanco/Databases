@@ -29,8 +29,15 @@ namespace LMS.Controllers
         /// </summary>
         /// <returns>The JSON array</returns>
         public IActionResult GetDepartments()
-        {            
-            return Json(null);
+        {
+            var allDept = from dept in db.Departments
+                          select new
+                          {
+                              name = dept.Name,
+                              subject = dept.Subject
+                          };
+
+            return Json(allDept.ToArray());
         }
 
 
