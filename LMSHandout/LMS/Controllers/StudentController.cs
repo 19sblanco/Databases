@@ -76,6 +76,9 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
         {           
+            // student natural join enrolled natural join classes
+            // select those fields out
+
             return Json(null);
         }
 

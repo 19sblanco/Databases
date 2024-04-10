@@ -4,8 +4,12 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.VisualBasic.Syntax;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 [assembly: InternalsVisibleTo( "LMSControllerTests" )]
@@ -54,8 +58,40 @@ namespace LMS.Controllers
         /// </summary>
         /// <returns>The JSON array</returns>
         public IActionResult GetCatalog()
-        {            
-            return Json(null);
+        {
+            /*
+             * get all departments
+             * 
+             * get all coureses
+             * 
+             * left natural join base on fk
+             * 
+             * group based on subject
+             * 
+             * select * from Departments natural left join Courses;
+             * 
+             */
+            var allDepartments = from department in db.Departments
+                                 join course in db.Courses
+                                 on department.Subject equals course.Department into join1
+                                 from departmentCourse in join1.DefaultIfEmpty()
+                                 select new
+                                 {
+                                     subject = department.Subject,
+                                     dname = department.Name,
+                                     courses = departmentCourse == null ? null : from course in db.Courses
+                                                                                 where course.Department == department.Subject
+                                                                                 select new
+                                                                                 {
+                                                                                     number = course.Number,
+                                                                                     cname = course.Name
+                                                                                 }
+                                 };
+
+
+            return Json(allDepartments.ToArray());
+            //return Json(null);
+
         }
 
         /// <summary>
@@ -73,8 +109,33 @@ namespace LMS.Controllers
         /// <param name="number">The course number, as in 5530</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetClassOfferings(string subject, int number)
-        {            
-            return Json(null);
+        {
+            // get the course based on subject and number
+            var courseID = from c in db.Courses
+                         where c.Number == number
+                         && c.Department == subject
+                         select c.CatalogId;
+            if (courseID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint cid = courseID.Single();
+
+
+            // get classes for that course
+            var classes = from c in db.Classes
+                          where c.Listing == cid
+                          select new
+                          {
+                              season = c.Season,
+                              year = c.Year,
+                              location = c.Location,
+                              start = c.StartTime,
+                              end = c.EndTime,
+                              fname = c.TaughtByNavigation.FName,
+                              lname = c.TaughtByNavigation.LName
+                          };
+            return Json(classes);
         }
 
         /// <summary>
@@ -132,7 +193,49 @@ namespace LMS.Controllers
         /// or an object containing {success: false} if the user doesn't exist
         /// </returns>
         public IActionResult GetUser(string uid)
-        {           
+        {
+            // check if student, prof, admin
+            var student = from s in db.Students
+                          where s.UId == uid
+                          select new
+                          {
+                              fname = s.FName,
+                              lname = s.LName,
+                              uid = s.UId,
+                              department = s.Major
+                          };
+            if (student.Count() == 1)
+            {
+                return Json(student);
+            }
+
+            var prof = from p in db.Professors
+                       where p.UId == uid
+                       select new
+                       {
+                           fname = p.FName,
+                           lname = p.LName,
+                           uid = p.UId,
+                           department = p.WorksIn
+                       };
+            if (prof.Count() == 1)
+            {
+                return Json(prof);
+            }
+
+            var admin = from a in db.Administrators
+                        where a.UId == uid
+                        select new
+                        {
+                            fname = a.FName,
+                            lname = a.LName,
+                            uid = a.UId
+                        };
+            if (admin.Count() == 1)
+            {
+                return Json(admin);
+            }
+
             return Json(new { success = false });
         }
 

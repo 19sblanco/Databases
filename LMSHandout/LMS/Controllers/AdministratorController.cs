@@ -204,10 +204,14 @@ namespace LMS.Controllers
                 return Json(new { success = false });
             }
 
+            uint cid = courseID.Single();
+
             // If course ID does exist check to make sure its not being offered twice
             // Check for same location and same start-end time
             var checkLocAndTime = from classes in db.Classes
-                                  where classes.Location == location
+                                  where classes.Season == season 
+                                  && classes.Year == year 
+                                  && classes.Location == location
                                   && ((classes.StartTime <= TimeOnly.FromDateTime(start)
                                   && TimeOnly.FromDateTime(start) <= classes.EndTime) ||
                                   (classes.StartTime <= TimeOnly.FromDateTime(end) 
@@ -218,10 +222,23 @@ namespace LMS.Controllers
             {
                 return Json(new { success = false });
             }
+            var checkLocAndTime2 = from classes in db.Classes
+                                   where classes.Season == season
+                                   && classes.Year == year
+                                   && classes.Location == location
+                                   select classes;
+            foreach (var item in checkLocAndTime2)
+            {
+                if (TimeOnly.FromDateTime(start) <= item.StartTime && item.EndTime <= TimeOnly.FromDateTime(end))
+                {
+                    return Json(new { success = false });
+                }
+            }
 
-            // Check Same Course same semester
-            var checkIfClasssExist = from classes in db.Classes
-                                where classes.Listing == courseID.ElementAtOrDefault(0)
+
+             // Check Same Course same semester
+             var checkIfClasssExist = from classes in db.Classes
+                                where classes.Listing == cid
                                 && classes.Year == year
                                 && classes.Season == season
                                 select classes;
@@ -238,7 +255,7 @@ namespace LMS.Controllers
             newClass.Location = location;
             newClass.StartTime = TimeOnly.FromDateTime(start);
             newClass.EndTime = TimeOnly.FromDateTime(end);
-            newClass.Listing = courseID.ElementAtOrDefault(0);
+            newClass.Listing = cid;
             newClass.TaughtBy = instructor;
 
             db.Classes.Add(newClass);

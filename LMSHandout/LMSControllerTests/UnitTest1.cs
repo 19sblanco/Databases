@@ -24,9 +24,17 @@ namespace LMSControllerTests
 
             dynamic x = allDepts.Value;
 
-            Assert.Equal(1, x.Length);
+            Assert.Equal(2, x.Length);
             Assert.Equal("CS", x[0].subject);
         }
+
+        //[Fact]
+        //public void TestNumCourses()
+        //{
+        //    CommonController ctrl = new CommonController(MakeTinyDB());
+
+        //    var allCourses = ctrl.GetCatalog as JsonResult;
+        //}
 
 
         ///// <summary>
@@ -48,8 +56,25 @@ namespace LMSControllerTests
             db.Database.EnsureCreated();
 
             db.Departments.Add(new Department { Name = "KSoC", Subject = "CS" });
+            db.Departments.Add(new Department { Name = "ART", Subject = "ART" });
+
+            Course c = new Course { Name = "intro to programming", Number = 1010, Department = "CS" };
+            db.Courses.Add(c);
+            db.Courses.Add(new Course { Name = "algorithms", Number = 2410, Department = "CS" });
+            db.Courses.Add(new Course { Name = "drawing", Number = 1010, Department = "ART" });
+
+            DateTime t = new DateTime(2023, 1, 1, 12, 0, 0, 0);
+            DateTime t1 = new DateTime(2024, 1, 1, 12, 0, 0, 0);
+            Professor p = new Professor { UId = "u0000000", FName = "prof", LName = "teacher",
+                Dob = DateOnly.FromDateTime(t1), WorksIn = "CS" };
+
+            db.Classes.Add(new Class { Season="Spring", Year=2024, Location="uofu",
+                StartTime=TimeOnly.FromDateTime(t), EndTime=TimeOnly.FromDateTime(t1),
+                Listing=c.CatalogId, 
+            })
 
             // TODO: add more objects to the test database
+
 
             db.SaveChanges();
 
