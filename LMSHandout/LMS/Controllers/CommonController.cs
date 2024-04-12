@@ -71,27 +71,21 @@ namespace LMS.Controllers
              * select * from Departments natural left join Courses;
              * 
              */
-            var allDepartments = from department in db.Departments
-                                 join course in db.Courses
-                                 on department.Subject equals course.Department into join1
-                                 from departmentCourse in join1.DefaultIfEmpty()
-                                 select new
-                                 {
-                                     subject = department.Subject,
-                                     dname = department.Name,
-                                     courses = departmentCourse == null ? null : from course in db.Courses
-                                                                                 where course.Department == department.Subject
-                                                                                 select new
-                                                                                 {
-                                                                                     number = course.Number,
-                                                                                     cname = course.Name
-                                                                                 }
-                                 };
+            var catalog = from depart in db.Departments
+                          select new
+                          {
+                              subject = depart.Subject,
+                              dname = depart.Name,
+                              courses = (from course in db.Courses
+                                        where course.Department == depart.Subject
+                                        select new
+                                        {
+                                            number = course.Number,
+                                            cname = course.Name
+                                        }).ToList()
+                          };
 
-
-            return Json(allDepartments.ToArray());
-            //return Json(null);
-
+            return Json(catalog.ToArray());
         }
 
         /// <summary>

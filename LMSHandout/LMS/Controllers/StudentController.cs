@@ -75,11 +75,20 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
-        {           
-            // student natural join enrolled natural join classes
-            // select those fields out
+        {
+            var myClasses = from enroll in db.Enrolleds
+                            where enroll.Student == uid
+                            select new
+                            {
+                                subject = enroll.ClassNavigation.ListingNavigation.Department,
+                                number = enroll.ClassNavigation.ListingNavigation.Number,
+                                name = enroll.ClassNavigation.ListingNavigation.Name,
+                                season = enroll.ClassNavigation.Season,
+                                year = enroll.ClassNavigation.Year,
+                                grade = enroll.Grade
+                            };
 
-            return Json(null);
+            return Json(myClasses.ToArray());
         }
 
         /// <summary>
@@ -138,8 +147,55 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = {true/false}. 
         /// false if the student is already enrolled in the class, true otherwise.</returns>
         public IActionResult Enroll(string subject, int num, string season, int year, string uid)
-        {          
-            return Json(new { success = false});
+        {
+            // Check to see if student is already enrolled
+            // Tables: Enrolled to find all ClassIds in Classes
+            // Classes corresponds to Season and year
+            var liting = from course in db.Courses
+                            where course.Number == num
+                            && course.Department == subject
+                            select course.CatalogId;
+            // Check to see if course exists
+            if(liting.Count() != 1)
+            {
+                return Json(new { success = false });
+            }
+            uint listingID = liting.Single();
+
+            // check to see if class offering exists
+            var getClassIds = from classez in db.Classes
+                              where classez.Listing == listingID
+                              && classez.Season == season
+                              && classez.Year == year
+                              select classez.ClassId;
+            if(getClassIds.Count() != 1)
+            {
+                return Json(new { success = false });
+            }
+            uint classID = getClassIds.Single();
+
+            // Check to see if they are already enrolled
+            var checkEnrollment = from enroll in db.Enrolleds
+                                  where enroll.Student == uid
+                                  && enroll.Class == classID
+                                  select enroll;
+            if(checkEnrollment.Count() != 0)
+            {
+                return Json(new { success = false });
+            }
+
+            // Enroll them in if not already
+            Enrolled e = new Enrolled { Class = classID, Student = uid, Grade = "--" };
+            db.Enrolleds.Add(e);
+            try
+            {
+                db.SaveChanges();
+            }
+            catch(Exception l) {
+                return Json(new { success = false });
+            }
+
+            return Json(new { success = true});
         }
 
 

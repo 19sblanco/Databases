@@ -55,27 +55,78 @@ namespace LMSControllerTests
             db.Database.EnsureDeleted();
             db.Database.EnsureCreated();
 
+            
             db.Departments.Add(new Department { Name = "KSoC", Subject = "CS" });
             db.Departments.Add(new Department { Name = "ART", Subject = "ART" });
 
             Course c = new Course { Name = "intro to programming", Number = 1010, Department = "CS" };
             db.Courses.Add(c);
-            db.Courses.Add(new Course { Name = "algorithms", Number = 2410, Department = "CS" });
-            db.Courses.Add(new Course { Name = "drawing", Number = 1010, Department = "ART" });
+            Course c1 = new Course { Name = "algorithms", Number = 2410, Department = "CS" };
+            db.Courses.Add(c1);
+            Course c2 = new Course { Name = "drawing", Number = 1010, Department = "ART" };
+            db.Courses.Add(c2);
 
             DateTime t = new DateTime(2023, 1, 1, 12, 0, 0, 0);
-            DateTime t1 = new DateTime(2024, 1, 1, 12, 0, 0, 0);
+            DateTime t1 = new DateTime(2024, 1, 1, 12, 0, 30, 0);
             Professor p = new Professor { UId = "u0000000", FName = "prof", LName = "teacher",
                 Dob = DateOnly.FromDateTime(t1), WorksIn = "CS" };
 
-            db.Classes.Add(new Class { Season="Spring", Year=2024, Location="uofu",
-                StartTime=TimeOnly.FromDateTime(t), EndTime=TimeOnly.FromDateTime(t1),
-                Listing=c.CatalogId, 
-            })
+            Professor p2 = new Professor
+            {
+                UId = "u0000001",
+                FName = "prof2",
+                LName = "teacher2",
+                Dob = DateOnly.FromDateTime(t1),
+                WorksIn = "ART"
+            };
 
-            // TODO: add more objects to the test database
+            db.Professors.Add(p);
+            db.Professors.Add(p2);
 
+            Class x = new Class
+            {
+                Season = "Spring",
+                Year = 2024,
+                Location = "uofu",
+                StartTime = TimeOnly.FromDateTime(t),
+                EndTime = TimeOnly.FromDateTime(t1),
+                Listing = c.CatalogId,
+                TaughtBy = p.UId
+            };
+            db.Classes.Add(x);
 
+            Class y = new Class
+            {
+                Season = "Fall",
+                Year = 2024,
+                Location = "uofu",
+                StartTime = TimeOnly.FromDateTime(t),
+                EndTime = TimeOnly.FromDateTime(t1),
+                Listing = c2.CatalogId,
+                TaughtBy = p2.UId
+            };
+            db.Classes.Add(y);
+
+            Class z = new Class
+            {
+                Season = "Spring",
+                Year = 2024,
+                Location = "usu",
+                StartTime = TimeOnly.FromDateTime(t),
+                EndTime = TimeOnly.FromDateTime(t1),
+                Listing = c1.CatalogId,
+                TaughtBy = p.UId
+            };
+            db.Classes.Add(z);
+
+            Student s = new Student { UId = "u0000002", FName = "stu", LName = "dent", Dob = new DateOnly(1999, 05, 05), Major = "CS" };
+            Student s1 = new Student { UId = "u0000003", FName = "joe", LName = "joe", Dob = new DateOnly(2000, 12, 20), Major = "ART" };
+            db.Students.Add(s);
+            db.Students.Add(s1);
+
+            db.Enrolleds.Add(new Enrolled { Student = s.UId, Class = x.ClassId, Grade = "A" });
+            db.Enrolleds.Add(new Enrolled { Student = s1.UId, Class = y.ClassId, Grade = "A" });
+                
             db.SaveChanges();
 
             return db;
