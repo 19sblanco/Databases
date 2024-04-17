@@ -9910,23 +9910,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\misae\\.nuget\\packages\\": {},
+    "C:\\Users\\sblan\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\misae\\OneDrive\\Documents\\GitHub\\Databases\\LMSHandout\\LMS\\LMS.csproj",
+      "projectUniqueName": "C:\\Users\\sblan\\uofu\\databases\\LMSHandout\\LMS\\LMS.csproj",
       "projectName": "LMS",
-      "projectPath": "C:\\Users\\misae\\OneDrive\\Documents\\GitHub\\Databases\\LMSHandout\\LMS\\LMS.csproj",
-      "packagesPath": "C:\\Users\\misae\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\misae\\OneDrive\\Documents\\GitHub\\Databases\\LMSHandout\\LMS\\obj\\",
+      "projectPath": "C:\\Users\\sblan\\uofu\\databases\\LMSHandout\\LMS\\LMS.csproj",
+      "packagesPath": "C:\\Users\\sblan\\.nuget\\packages\\",
+      "outputPath": "C:\\Users\\sblan\\uofu\\databases\\LMSHandout\\LMS\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\misae\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\sblan\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -9948,11 +9948,6 @@
         "warnAsError": [
           "NU1605"
         ]
-      },
-      "restoreAuditProperties": {
-        "enableAudit": "true",
-        "auditLevel": "low",
-        "auditMode": "direct"
       }
     },
     "frameworks": {
@@ -10009,7 +10004,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.200\\RuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\8.0.100\\RuntimeIdentifierGraph.json"
       }
     }
   }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -106,8 +107,54 @@ namespace LMS.Controllers
         /// <param name="uid"></param>
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
-        {            
-            return Json(null);
+        {
+            var courseID = from c in db.Courses
+                           where c.Department == subject
+                           && c.Number == num
+                           select c.CatalogId;
+            if (courseID.Count() == 0)
+            {
+                return Json(null);
+            }
+            uint cid = courseID.Single();
+
+            var classID = from c in db.Classes
+                          where c.Season == season
+                          && c.Year == year
+                          && c.Listing == cid
+                          select c.ClassId;
+            if (classID.Count() == 0)
+            {
+                return Json(null);
+            }
+            uint classid = classID.Single();
+
+            var assignmentCatID = from ac in db.AssignmentCategories
+                                  where ac.InClass == classid
+                                  select ac.CategoryId;
+            List<uint> assignCatArray = assignmentCatID.ToList();
+            var assign = db.Assignments.Where(row => assignCatArray.Contains(row.Category))
+                .Select(row => row.AssignmentId)
+                .ToList();
+
+            // TODO you want the these cols, notice the score is null if no submission
+            // sounds like a left join
+            /// "aname" - The assignment name
+            /// "cname" - The category name that the assignment belongs to
+            /// "due" - The due Date/Time
+            /// "score" - The score earned by the student, or null if the student has not submitted to this assignment.
+
+
+            var submission = db.Submissions.Where(row => row.Student == uid && assign.Contains(row.Assignment))
+                .Select(row => new
+                {
+                    aname = row.AssignmentNavigation.Name,
+                    cname = row.AssignmentNavigation.CategoryNavigation.Name,
+                    due = row.AssignmentNavigation.Due,
+                    score = row.Score
+                });
+            return Json(submission.ToArray());
+
         }
 
 
