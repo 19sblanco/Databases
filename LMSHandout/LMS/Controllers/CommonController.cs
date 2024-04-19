@@ -145,8 +145,46 @@ namespace LMS.Controllers
         /// <param name="asgname">The name of the assignment in the category</param>
         /// <returns>The assignment contents</returns>
         public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
-        {            
-            return Content("");
+        {
+            var courseID = from c in db.Courses
+                           where c.Department == subject
+                           && c.Number == num
+                           select c.CatalogId;
+            if (courseID.Count() == 0)
+            {
+                return Content("");
+            }
+            uint cid = courseID.Single();
+
+            var classID = from c in db.Classes
+                          where c.Season == season
+                          && c.Year == year
+                          && c.Listing == cid
+                          select c.ClassId;
+            if (classID.Count() == 0)
+            {
+                return Content("");
+            }
+            uint classid = classID.Single();
+
+            var assignmentCatID = from ac in db.AssignmentCategories
+                                  where ac.InClass == classid && ac.Name == category
+                                  select ac.CategoryId;
+            if (assignmentCatID.Count() == 0)
+            {
+                return Content("");
+            }
+            uint assignCID = assignmentCatID.Single();
+
+            var assignContent = from aid in db.Assignments
+                           where aid.Name == asgname && aid.Category == assignCID
+                           select aid.Contents;
+            if (assignContent.Count() == 0)
+            {
+                return Content("");
+            }
+
+            return Content(assignContent.Single());
         }
 
 
@@ -165,8 +203,55 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student who submitted it</param>
         /// <returns>The submission text</returns>
         public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
-        {            
-            return Content("");
+        {
+            var courseID = from c in db.Courses
+                           where c.Department == subject
+                           && c.Number == num
+                           select c.CatalogId;
+            if (courseID.Count() == 0)
+            {
+                return Content("");
+            }
+            uint cid = courseID.Single();
+
+            var classID = from c in db.Classes
+                          where c.Season == season
+                          && c.Year == year
+                          && c.Listing == cid
+                          select c.ClassId;
+            if (classID.Count() == 0)
+            {
+                return Content("");
+            }
+            uint classid = classID.Single();
+
+            var assignmentCatID = from ac in db.AssignmentCategories
+                                  where ac.InClass == classid && ac.CategoryId == (uint)int.Parse(category)
+                                  select ac.CategoryId;
+            if (assignmentCatID.Count() == 0)
+            {
+                return Content("");
+            }
+            uint assignCID = assignmentCatID.Single();
+
+            var assignID = from aid in db.Assignments
+                           where aid.Name == asgname && aid.Category == assignCID
+                           select aid.AssignmentId;
+            if (assignID.Count() == 0)
+            {
+                return Content("");
+            }
+            uint aID = assignID.Single();
+
+            var submission = from sub in db.Submissions
+                             where sub.Assignment == aID && sub.Student == uid
+                             select sub.SubmissionContents;
+            if(submission.Count() == 0)
+            {
+                return Content("");
+            }
+
+            return Content(submission.Single());
         }
 
 
@@ -196,11 +281,11 @@ namespace LMS.Controllers
                               fname = s.FName,
                               lname = s.LName,
                               uid = s.UId,
-                              department = s.Major
+                              department = s.MajorNavigation.Name
                           };
             if (student.Count() == 1)
             {
-                return Json(student);
+                return Json(student.ToArray()[0]);
             }
 
             var prof = from p in db.Professors
@@ -210,11 +295,11 @@ namespace LMS.Controllers
                            fname = p.FName,
                            lname = p.LName,
                            uid = p.UId,
-                           department = p.WorksIn
+                           department = p.WorksInNavigation.Name
                        };
             if (prof.Count() == 1)
             {
-                return Json(prof);
+                return Json(prof.ToArray()[0]);
             }
 
             var admin = from a in db.Administrators
@@ -227,7 +312,7 @@ namespace LMS.Controllers
                         };
             if (admin.Count() == 1)
             {
-                return Json(admin);
+                return Json(admin.ToArray()[0]);
             }
 
             return Json(new { success = false });

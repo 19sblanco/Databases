@@ -214,7 +214,7 @@ namespace LMS_CustomIdentity.Controllers
                         aname = row.Name,
                         cname = row.Category,
                         due = row.Due,
-                        submissions = row.Submissions,
+                        submissions = row.Submissions.Count(),
                     })
                     .ToList();
                 return Json(assign.ToArray());
@@ -239,7 +239,7 @@ namespace LMS_CustomIdentity.Controllers
                                       aname = a.Name,
                                       cname = a.Category,
                                       due = a.Due,
-                                      submissions = a.Submissions,
+                                      submissions = a.Submissions.Count()
                                   };
                 return Json(assignments.ToArray());
 
@@ -467,7 +467,66 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetSubmissionsToAssignment(string subject, int num, string season, int year, string category, string asgname)
         {
-            return Json(null);
+            var courseID = from c in db.Courses
+                           where c.Department == subject
+                           && c.Number == num
+                           select c.CatalogId;
+            if (courseID.Count() == 0)
+            {
+                return Json(null);
+            }
+            uint cid = courseID.Single();
+
+            var classID = from c in db.Classes
+                          where c.Season == season
+                          && c.Year == year
+                          && c.Listing == cid
+                          select c.ClassId;
+            if (classID.Count() == 0)
+            {
+                return Json(null);
+            }
+            uint classid = classID.Single();
+
+            var assignmentCatID = from ac in db.AssignmentCategories
+                                  where ac.InClass == classid && ac.CategoryId == (uint)int.Parse(category) //was ac.name
+                                  select ac.CategoryId;
+            if (assignmentCatID.Count() == 0)
+            {
+                return Json(null);
+            }
+            uint assignCID = assignmentCatID.Single();
+
+            var assignID = from aid in db.Assignments
+                           where aid.Name == asgname && aid.Category == assignCID
+                           select aid.AssignmentId;
+            if (assignID.Count() == 0)
+            {
+                return Json(null);
+            }
+            uint aID = assignID.Single();
+
+            /// "fname" - first name
+            /// "lname" - last name
+            /// "uid" - user ID
+            /// "time" - DateTime of the submission
+            /// "score" - The score given to the submission
+            var submission = from sub in db.Submissions
+                             where sub.Assignment == aID
+                             select new
+                             {
+                                 fname = sub.StudentNavigation.FName,
+                                 lname = sub.StudentNavigation.LName,
+                                 uid = sub.StudentNavigation.UId,
+                                 time = sub.Time,
+                                 score = sub.Score
+                             };
+            if(submission.Count() == 0)
+            {
+                return Json(null);
+            }
+
+            return Json(submission.ToArray());
         }
 
 
@@ -485,7 +544,68 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult GradeSubmission(string subject, int num, string season, int year, string category, string asgname, string uid, int score)
         {
-            return Json(new { success = false });
+            var courseID = from c in db.Courses
+                           where c.Department == subject
+                           && c.Number == num
+                           select c.CatalogId;
+            if (courseID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint cid = courseID.Single();
+
+            var classID = from c in db.Classes
+                          where c.Season == season
+                          && c.Year == year
+                          && c.Listing == cid
+                          select c.ClassId;
+            if (classID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint classid = classID.Single();
+
+            var assignmentCatID = from ac in db.AssignmentCategories
+                                  where ac.InClass == classid && ac.CategoryId == (uint)int.Parse(category) //was ac.name
+                                  select ac.CategoryId;
+            if (assignmentCatID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint assignCID = assignmentCatID.Single();
+
+            var assignID = from aid in db.Assignments
+                           where aid.Name == asgname && aid.Category == assignCID
+                           select aid.AssignmentId;
+            if (assignID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint aID = assignID.Single();
+
+            var submission = from sub in db.Submissions
+                             where sub.Assignment == aID
+                             select sub;
+            if (submission.Count() != 1)
+            {
+                return Json(new { success = false });
+            }
+
+            foreach(Submission s in submission)
+            {
+                s.Score = (uint)score;
+            }
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch(Exception e)
+            {
+                return Json(new { success = false });
+            }
+
+            return Json(new { success = true });
         }
 
 

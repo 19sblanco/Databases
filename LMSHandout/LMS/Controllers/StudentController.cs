@@ -138,20 +138,11 @@ namespace LMS.Controllers
             var assign = db.Assignments.Where(row => assignCatArray.Contains(row.Category))
                 .Select(row => row);
 
+            //join s in db.Submissions on new { A = q.AssignmentId, B = uid } equals new { A = s.Assignment, B = s.Student
 
-            /*
-             * given a class and a student
-             * get all the assignments in that class
-             * and left join the submission table where the assignments match
-             */
-            // TODO you want the these cols, notice the score is null if no submission
-            // sounds like a left join
-            /// "aname" - The assignment name
-            /// "cname" - The category name that the assignment belongs to
-            /// "due" - The due Date/Time
-            /// "score" - The score earned by the student, or null if the student has not submitted to this assignment.
             var result = from a in assign
-                         join s in db.Submissions on a.AssignmentId equals s.Assignment into temp
+                         join s in db.Submissions on new { A = a.AssignmentId, B = uid} equals new {A = s.Assignment, B = s.Student} 
+                         into temp //a.AssignmentId equals s.Assignment into temp
                          from s in temp.DefaultIfEmpty()
                          select new
                          {
@@ -189,8 +180,91 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = true/false}</returns>
         public IActionResult SubmitAssignmentText(string subject, int num, string season, int year,
           string category, string asgname, string uid, string contents)
-        {           
-            return Json(new { success = false });
+        {
+            var courseID = from c in db.Courses
+                           where c.Department == subject
+                           && c.Number == num
+                           select c.CatalogId;
+            if (courseID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint cid = courseID.Single();
+
+            var classID = from c in db.Classes
+                          where c.Season == season
+                          && c.Year == year
+                          && c.Listing == cid
+                          select c.ClassId;
+            if (classID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint classid = classID.Single();
+
+            var assignmentCatID = from ac in db.AssignmentCategories
+                                  where ac.InClass == classid && ac.Name == category
+                                  select ac.CategoryId;
+            if(assignmentCatID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint assignCID = assignmentCatID.Single();
+
+            var assignID = from aid in db.Assignments
+                           where aid.Name == asgname && aid.Category == assignCID
+                           select aid.AssignmentId;
+            if (assignID.Count() == 0)
+            {
+                return Json(new { success = false });
+            }
+            uint aID = assignID.Single();
+
+            var submission = from sub in db.Submissions
+                             where sub.Assignment == aID && sub.Student == uid
+                             select sub;
+
+            if(submission.Count() != 1)
+            {
+                //First submission
+                // AssignmentID, uid, score, SubmissionContents, Time
+                Submission firstSub = new Submission
+                {
+                    Assignment = aID,
+                    Student = uid,
+                    Score = 0,
+                    SubmissionContents = contents,
+                    Time = DateTime.Now
+                };
+                db.Submissions.Add(firstSub);
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch(Exception e)
+                {
+                    return Json(new { success = false });
+                }
+                return Json(new { success = true });
+            }
+
+            // new attempt
+            foreach(Submission newAttempt in submission)
+            {
+                newAttempt.Time = DateTime.Now;
+                newAttempt.SubmissionContents = contents;
+            }
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception e)
+            {
+                return Json(new { success = false });
+            }
+
+            return Json(new { success = true });
         }
 
 
