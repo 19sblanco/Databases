@@ -108,6 +108,8 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
         {
+
+
             var courseID = from c in db.Courses
                            where c.Department == subject
                            && c.Number == num
@@ -134,26 +136,35 @@ namespace LMS.Controllers
                                   select ac.CategoryId;
             List<uint> assignCatArray = assignmentCatID.ToList();
             var assign = db.Assignments.Where(row => assignCatArray.Contains(row.Category))
-                .Select(row => row.AssignmentId)
-                .ToList();
+                .Select(row => row);
 
+
+            /*
+             * given a class and a student
+             * get all the assignments in that class
+             * and left join the submission table where the assignments match
+             */
             // TODO you want the these cols, notice the score is null if no submission
             // sounds like a left join
             /// "aname" - The assignment name
             /// "cname" - The category name that the assignment belongs to
             /// "due" - The due Date/Time
             /// "score" - The score earned by the student, or null if the student has not submitted to this assignment.
+            var result = from a in assign
+                         join s in db.Submissions on a.AssignmentId equals s.Assignment into temp
+                         from s in temp.DefaultIfEmpty()
+                         select new
+                         {
+                             aname = a.Name,
+                             cname = a.CategoryNavigation.Name,
+                             due = a.Due,
+                             score = s == null ? null : (uint?)s.Score,
+                         };
 
 
-            var submission = db.Submissions.Where(row => row.Student == uid && assign.Contains(row.Assignment))
-                .Select(row => new
-                {
-                    aname = row.AssignmentNavigation.Name,
-                    cname = row.AssignmentNavigation.CategoryNavigation.Name,
-                    due = row.AssignmentNavigation.Due,
-                    score = row.Score
-                });
-            return Json(submission.ToArray());
+
+
+            return Json(result.ToArray());
 
         }
 
