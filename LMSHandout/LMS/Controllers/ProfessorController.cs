@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography;
@@ -393,31 +394,31 @@ namespace LMS_CustomIdentity.Controllers
         public IActionResult CreateAssignment(string subject, int num, string season, int year, string category, string asgname, int asgpoints, DateTime asgdue, string asgcontents)
         {
             
-            var courseID = from c in db.Courses
+            var courseID = (from c in db.Courses
                            where c.Department == subject
                            && c.Number == num
-                           select c.CatalogId;
+                           select c.CatalogId).ToArray();
             if (courseID.Count() == 0)
             {
                 return Json(new { success = false });
             }
             uint cid = courseID.Single();
 
-            var classID = from c in db.Classes
+            var classID = (from c in db.Classes
                           where c.Season == season
                           && c.Year == year
                           && c.Listing == cid
-                          select c.ClassId;
+                          select c.ClassId).ToArray();
             if (classID.Count() == 0)
             {
                 return Json(new { success = false });
             }
             uint classid = classID.Single();
 
-            var assignmentCatID = from ac in db.AssignmentCategories
+            var assignmentCatID = (from ac in db.AssignmentCategories
                                 where ac.InClass == classid
                                 && ac.Name == category
-                                select ac.CategoryId;
+                                select ac.CategoryId).ToArray();
             if (assignmentCatID.Count() == 0)
             {
                 return Json(new { success = false });
@@ -436,6 +437,17 @@ namespace LMS_CustomIdentity.Controllers
             {
                 db.Assignments.Add(assignment);
                 db.SaveChanges();
+
+                var students = (from e in db.Enrolleds
+                               where e.Class == classid
+                               select e.Student).ToArray();
+                foreach (string s in students)
+                {
+                    update_grade(s, subject, num, season, year, category, asgname);
+                }
+
+
+
                 return Json(new { success = true });
             }
             catch (Exception e)
@@ -585,6 +597,7 @@ namespace LMS_CustomIdentity.Controllers
 
             var submission = from sub in db.Submissions
                              where sub.Assignment == aID
+                             && sub.Student == uid
                              select sub;
             if (submission.Count() != 1)
             {
@@ -604,6 +617,9 @@ namespace LMS_CustomIdentity.Controllers
             {
                 return Json(new { success = false });
             }
+
+
+            update_grade(uid, subject, num, season, year, category, asgname);
 
             return Json(new { success = true });
         }
@@ -644,7 +660,110 @@ namespace LMS_CustomIdentity.Controllers
         }
 
 
-        
+        private void update_grade(string uid, string subject, int num, string season, int year, string category, string asgname)
+        {
+
+            var courseID = (from c in db.Courses
+                           where c.Department == subject
+                           && c.Number == num
+                           select c.CatalogId).ToArray();
+            if (courseID.Count() == 0)
+            {
+                return;
+            }
+            uint cid = courseID.Single();
+
+            var classID = (from c in db.Classes
+                          where c.Season == season
+                          && c.Year == year
+                          && c.Listing == cid
+                          select c.ClassId).ToArray();
+            if (classID.Count() == 0)
+            {
+                return;
+            }
+            uint classid = classID.Single();
+            var assignmentCat = (from ac in db.AssignmentCategories
+                                  where ac.InClass == classid
+                                  select ac).ToArray();
+            if (assignmentCat.Count() == 0)
+            {
+                return;
+            }
+
+            float final_score = 0;
+            float sum_category_weights = 0;
+            foreach (AssignmentCategory ac in assignmentCat)
+            {
+                var ass = (from a in db.Assignments
+                          where a.Category == ac.CategoryId
+                          select a).ToArray();
+                if (ass.Count() > 0)
+                //if (ac.Assignments.Count() > 0)
+                {
+
+                    sum_category_weights += ac.Weight;
+                    uint total_possible_points = 0;
+                    uint total_earned_points = 0;
+
+                    foreach (Assignment assign in ass)
+                    {
+                        uint max_points = assign.MaxPoints;
+                        uint earned_points = 0;
+                        //var submissions_by_student = assign.Submissions.Where(row => row.Student == uid)
+                        //.Select(row => row);
+                        var submission_by_student = (from s in db.Submissions
+                                                    where s.Student == uid
+                                                    && s.Assignment == assign.AssignmentId
+                                                    select s).ToArray();
+                        if (submission_by_student.Count() != 0)
+                        {
+                            earned_points = submission_by_student.Single().Score;
+                        }
+                        total_possible_points += max_points;
+                        total_earned_points += earned_points;
+                    }
+                    float total_score = (float)total_earned_points / (float)total_possible_points;
+                    float total_weighted_score = total_score * ac.Weight;
+                    final_score += total_weighted_score;
+                }
+           
+            }
+            float scaling_factor = 100 / sum_category_weights;
+            float total_percent = final_score * scaling_factor;
+            string letter_grade = "";
+            if (100 >= total_percent && total_percent >= 93) { letter_grade = "A"; }
+            else if (93 > total_percent && total_percent >= 90) { letter_grade = "A-"; }
+            else if (90 > total_percent && total_percent >= 87) { letter_grade = "B+"; }
+            else if (87 > total_percent && total_percent >= 83) { letter_grade = "B"; }
+            else if (83 > total_percent && total_percent >= 80) { letter_grade = "B-"; }
+            else if (80 > total_percent && total_percent >= 77) { letter_grade = "C+"; }
+            else if (77 > total_percent && total_percent >= 73) { letter_grade = "C"; }
+            else if (73 > total_percent && total_percent >= 70) { letter_grade = "C-"; }
+            else if (70 > total_percent && total_percent >= 67) { letter_grade = "D+"; }
+            else if (67 > total_percent && total_percent >= 63) { letter_grade = "D"; }
+            else if (63 > total_percent && total_percent >= 60) { letter_grade = "D-"; }
+            else { letter_grade = "E"; }
+
+            var enrolled = from en in db.Enrolleds
+                           where en.Class == classid
+                           && en.Student == uid
+                           select en;
+            if (enrolled.Count() != 1)
+            {
+                return;
+            }
+            Enrolled e = enrolled.Single();
+            e.Grade = letter_grade;
+            try
+            {
+                db.SaveChanges();
+            }
+            catch 
+            {
+                return;
+            }
+        }
         /*******End code to modify********/
     }
 }

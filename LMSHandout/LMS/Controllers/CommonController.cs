@@ -146,6 +146,8 @@ namespace LMS.Controllers
         /// <returns>The assignment contents</returns>
         public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
         {
+
+
             var courseID = from c in db.Courses
                            where c.Department == subject
                            && c.Number == num
@@ -167,9 +169,26 @@ namespace LMS.Controllers
             }
             uint classid = classID.Single();
 
-            var assignmentCatID = from ac in db.AssignmentCategories
+            /*
+ * student: category is the name 
+ * prof: category is the categoryID
+ */
+
+            // need a default value as a queryable
+            var assignmentCatID = (new List<uint> { 1 }).AsQueryable();
+            if (Int32.TryParse(category, out int catID))
+            {
+                assignmentCatID = from ac in db.AssignmentCategories
+                                      where ac.InClass == classid && ac.CategoryId == int.Parse(category)
+                                      select ac.CategoryId;
+            }
+            else
+            {
+                assignmentCatID = from ac in db.AssignmentCategories
                                   where ac.InClass == classid && ac.Name == category
                                   select ac.CategoryId;
+            }
+
             if (assignmentCatID.Count() == 0)
             {
                 return Content("");
@@ -225,9 +244,19 @@ namespace LMS.Controllers
             }
             uint classid = classID.Single();
 
-            var assignmentCatID = from ac in db.AssignmentCategories
-                                  where ac.InClass == classid && ac.CategoryId == (uint)int.Parse(category)
+            var assignmentCatID = (new List<uint> { 1 }).AsQueryable();
+            if (Int32.TryParse(category, out int catID))
+            {
+                assignmentCatID = from ac in db.AssignmentCategories
+                                  where ac.InClass == classid && ac.CategoryId == int.Parse(category)
                                   select ac.CategoryId;
+            }
+            else
+            {
+                assignmentCatID = from ac in db.AssignmentCategories
+                                  where ac.InClass == classid && ac.Name == category
+                                  select ac.CategoryId;
+            }
             if (assignmentCatID.Count() == 0)
             {
                 return Content("");
