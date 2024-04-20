@@ -8,6 +8,6 @@ build_property.PlatformNeutralAssembly =
 build_property.EnforceExtendedAnalyzerRules = 
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = LMSControllerTests
-build_property.ProjectDir = C:\Users\sblan\uofu\databases\LMSHandout\LMSControllerTests\
+build_property.ProjectDir = C:\Users\misae\OneDrive\Documents\GitHub\Databases\LMSHandout\LMSControllerTests\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 

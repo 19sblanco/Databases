@@ -344,8 +344,41 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student</param>
         /// <returns>A JSON object containing a single field called "gpa" with the number value</returns>
         public IActionResult GetGPA(string uid)
-        {            
-            return Json(null);
+        {
+            // Check for no class
+            var enrolledClasses = from ec in db.Enrolleds
+                                  where ec.Student == uid
+                                  select ec;
+            if (enrolledClasses.Count() == 0)
+            {
+                return Json(new { gpa = 0.0 });
+            }
+
+            // From Enrolled get all classes and grades
+            int noGrade = 0;
+            double gradeEarned = 0.0;
+            foreach (Enrolled x in enrolledClasses)
+            {
+                if (x.Grade == "A") { gradeEarned += 4 * 4.0; }
+                else if (x.Grade == "A-") { gradeEarned += 4 * 3.7; }
+                else if (x.Grade == "B+") { gradeEarned += 4 * 3.3; }
+                else if (x.Grade == "B") { gradeEarned += 4 * 3.0; }
+                else if (x.Grade == "B-") { gradeEarned += 4 * 2.7; }
+                else if (x.Grade == "C+") { gradeEarned += 4 * 2.3; }
+                else if (x.Grade == "C") { gradeEarned += 4 * 2.0; }
+                else if (x.Grade == "C-") { gradeEarned += 4 * 1.7; }
+                else if (x.Grade == "D+") { gradeEarned += 4 * 1.3; }
+                else if (x.Grade == "D") { gradeEarned += 4 * 1.0; }
+                else if (x.Grade == "D-") { gradeEarned += 4 * 0.7; }
+                else if (x.Grade == "E") { gradeEarned += 4 * 0.0; }
+                else if (x.Grade == "--") { noGrade++; }
+
+
+            }
+
+            double GPA = gradeEarned / ((enrolledClasses.Count() * 4) - (noGrade * 4));
+
+            return Json(new {gpa = GPA});
         }
                 
         /*******End code to modify********/
